@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário de Missas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            width: 80%;
+            max-width: 1200px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 10px 0;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .navigation-buttons button, #toggle-theme {
+            padding: 10px 20px;
+            border: none;
+            background-color: var(--button-background);
+            color: var(--button-color);
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 5px;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .calendar div {
+            padding: 10px;
+            border: 1px solid var(--accent-color);
+            text-align: center;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .calendar .day-header {
+            background-color: var(--accent-color);
+            color: var(--text-on-accent);
+        }
+
+        .calendar .day-cell.has-event {
+            position: relative;
+        }
+
+        .calendar .day-cell.has-event::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background-color: var(--event-dot);
+            border-radius: 50%;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
+            background-color: var(--background-color);
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+            transition: left 0.3s;
+            padding: 20px;
+        }
+
+        .sidebar-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100%;
+            color: var(--text-color);
+        }
+
+        .toggle-sidebar {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: var(--button-background);
+            color: var(--button-color);
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .note {
+            margin-top: 10px;
+            border: 1px solid var(--accent-color);
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+            position: absolute;
+            z-index: 100;
+            background-color: var(--background-color);
+        }
+
+        .note input[type="text"] {
+            width: calc(100% - 20px);
+            padding: 5px;
+            margin-top: 5px;
+            box-sizing: border-box;
+        }
+
+        .note .close-note {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            cursor: pointer;
+        }
+
+        .color-options {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            margin: 0 5px;
+            cursor: pointer;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.3);
+        }
+
+        .event-list {
+            margin-top: 20px;
+        }
+
+        .event-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .event-item .event-dot {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+        :root {
+            --background-color: #ffffff;
+            --text-color: #000000;
+            --accent-color: #00bcd4;
+            --button-background: #00bcd4;
+            --button-color: #ffffff;
+            --text-on-accent: #ffffff;
+            --event-dot: #006064;
+        }
+
+        [data-theme='dark'] {
+            --background-color: #121212;
+            --text-color: #ffffff;
+            --accent-color: #ffab00;
+            --button-background: #ffab00;
+            --button-color: #000000;
+            --text-on-accent: #000000;
+            --event-dot: #ff6f00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 id="month-year"></h1>
+            <div class="navigation-buttons">
+                <button id="prev-month">Anterior</button>
+                <button id="next-month">Próximo</button>
+            </div>
+            <button id="toggle-theme">Trocar Tema</button>
+        </header>
+        <div class="calendar" id="calendar"></div>
+    </div>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-content">
+            <p>Desenvolvido por Kassia Albuquerque</p>
+            <p>© 2024. Todos os direitos reservados.</p>
+            <div class="event-list" id="event-list">
+                <h3>Eventos Marcados</h3>
+            </div>
+        </div>
+    </div>
+    <button id="toggle-sidebar" class="toggle-sidebar">☰</button>
+    <script>
+        const monthYearElement = document.getElementById('month-year');
+        const calendarElement = document.getElementById('calendar');
+        const prevMonthButton = document.getElementById('prev-month');
+        const nextMonthButton = document.getElementById('next-month');
+        const toggleThemeButton = document.getElementById('toggle-theme');
+        const toggleSidebarButton = document.getElementById('toggle-sidebar');
+        const sidebarElement = document.getElementById('sidebar');
+        const eventListElement = document.getElementById('event-list');
+
+        let currentDate = new Date();
+        let currentTheme = 'light';
+        let selectedColor = '#006064'; // Default color for event dots
+
+        function renderCalendar() {
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
+
+            monthYearElement.textContent = `${getMonthName(month)} ${year}`;
+            calendarElement.innerHTML = '';
+
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            const dayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            dayHeaders.forEach(day => {
+                const dayHeaderElement = document.createElement('div');
+                dayHeaderElement.className = 'day-header';
+                dayHeaderElement.textContent = day;
+                calendarElement.appendChild(dayHeaderElement);
+            });
+
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                const emptyCell = document.createElement('div');
+                calendarElement.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell';
+                dayCell.textContent = day;
+                dayCell.addEventListener('click', () => toggleNoteEditor(day));
+                calendarElement.appendChild(dayCell);
+            }
+        }
+
+        function getMonthName(month) {
+            const monthNames = [
+                'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+            ];
+            return monthNames[month];
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+            renderEventList(); // Update event list with correct theme colors
+        }
+
+        function toggleSidebar() {
+            const isVisible = sidebarElement.style.left === '0px';
+            sidebarElement.style.left = isVisible ? '-250px' : '0px';
+        }
+
+        function toggleNoteEditor(day) {
+            const dayCell = document.getElementsByClassName('day-cell')[day - 1];
+            const hasNotes = dayCell.classList.contains('has-event');
+            
+            if (!hasNotes) {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note';
+                noteElement.innerHTML = `
+                    <span class="close-note" onclick="removeNoteEditor(${day})"></span>
+                    <input type="text" placeholder="Digite sua nota...">
+                    <div class="color-options" id="color-options-${day}">
+                        ${getDotColorOptions(day)}
+                    </div>
+                    <button onclick="saveNote(${day})">Salvar</button>
+                `;
+                dayCell.appendChild(noteElement);
+                             }
+
+       }
+                                         
+        function getDotColorOptions(day) {
+            let colorOptions = '';
+            const colors = ['#ff5722', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722', '#795548', '#607d8b', '#9e9e9e', '#607d8b', '#333333', '#ff5722', '#4caf50', '#ffeb3b', '#e91e63', '#673ab7', '#f44336', '#009688', '#607d8b', '#ff5722'];
+
+            colors.forEach(color => {
+                colorOptions += `<div class="color-dot" style="background-color: ${color}" onclick="selectColor('${color}', ${day})"></div>`;
+            });
+
+            return colorOptions;
+        }
+
+        function selectColor(color, day) {
+            selectedColor = color;
+            const colorOptions = document.getElementById(`color-options-${day}`).getElementsByClassName('color-dot');
+            
+            Array.from(colorOptions).forEach(dot => {
+                dot.style.border = dot.style.backgroundColor === color ? '2px solid #000' : 'none';
+            });
+        }
+
+        function saveNote(day) {
+            const inputElement = document.querySelector(`.day-cell:nth-child(${day + 1}) .note input[type="text"]`);
+            const noteText = inputElement.value.trim();
+
+            if (noteText !== '') {
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note';
+                noteElement.innerHTML = `
+                    <span class="close-note" onclick="removeNoteEditor(${day})">×</span>
+                    <p>${noteText}</p>
+                `;
+                noteElement.style.borderColor = selectedColor;
+                const dayCell = document.getElementsByClassName('day-cell')[day - 1];
+                dayCell.classList.add('has-event');
+                dayCell.appendChild(noteElement);
+                inputElement.value = '';
+
+                const eventItem = document.createElement('div');
+                eventItem.className = 'event-item';
+                eventItem.innerHTML = `
+                    <div class="event-dot" style="background-color: ${selectedColor}"></div>
+                    <p>${noteText}</p>
+                `;
+                eventListElement.appendChild(eventItem);
+            }
+        }
+
+        function removeNoteEditor(day) {
+            const dayCell = document.getElementsByClassName('day-cell')[day - 1];
+            const noteElement = dayCell.getElementsByClassName('note')[0];
+            dayCell.removeChild(noteElement);
+        }
+
+        function renderEventList() {
+            const eventItems = eventListElement.getElementsByClassName('event-item');
+            Array.from(eventItems).forEach(item => {
+                const dotColor = item.getElementsByClassName('event-dot')[0].style.backgroundColor;
+                item.getElementsByClassName('event-dot')[0].style.backgroundColor = getContrastColor(dotColor);
+            });
+        }
+
+        function getContrastColor(hexColor) {
+            const threshold = 130; /* about half of 256. Lower threshold equals more dark text on dark background  */
+            const [r, g, b] = hexColor.match(/\w\w/g).map(x => parseInt(x, 16));
+            return r * 0.299 + g * 0.587 + b * 0.114 > threshold ? 'black' : 'white';
+        }
+
+        prevMonthButton.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        nextMonthButton.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        toggleThemeButton.addEventListener('click', toggleTheme);
+        toggleSidebarButton.addEventListener('click', toggleSidebar);
+
+        renderCalendar();
+    </script>
+</body>
+</html>
