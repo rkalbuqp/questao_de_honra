@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário Interativo</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <button id="prev-month">&lt;</button>
+            <h1 id="current-month-year"></h1>
+            <button id="next-month">&gt;</button>
+        </div>
+        <div class="calendar-grid" id="calendar-grid">
+            <!-- Aqui serão inseridos os dias do calendário -->
+        </div>
+    </div>
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span class="close-sidebar" onclick="toggleSidebar()">&times;</span>
+            <h2>Eventos Marcados</h2>
+        </div>
+        <div class="event-list" id="event-list">
+            <!-- Aqui serão listados os eventos -->
+        </div>
+        <div class="sidebar-footer">
+            <p>Desenvolvido por Kassia Albuquerque &copy; 2024. Todos os direitos reservados.</p>
+        </div>
+    </div>
+    <button class="toggle-sidebar-button" onclick="toggleSidebar()">Mostrar Sidebar</button>
+    <script src="script.js"></script>
+</body>
+</html>
