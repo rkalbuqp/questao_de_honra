@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendário de Missas</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .container {
+            width: 80%;
+            max-width: 1200px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 10px 0;
+            border-bottom: 2px solid var(--accent-color);
+        }
+
+        .navigation-buttons button, #toggle-theme {
+            padding: 10px 20px;
+            border: none;
+            background-color: var(--button-background);
+            color: var(--button-color);
+            cursor: pointer;
+            margin: 5px;
+            border-radius: 5px;
+        }
+
+        .calendar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            margin-top: 20px;
+        }
+
+        .calendar div {
+            padding: 10px;
+            border: 1px solid var(--accent-color);
+            text-align: center;
+        }
+
+        .calendar .day-header {
+            background-color: var(--accent-color);
+            color: var(--text-on-accent);
+        }
+
+        .calendar .day-cell {
+            cursor: pointer;
+            position: relative;
+        }
+
+        .calendar .day-cell.has-event::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            background-color: var(--event-dot);
+            border-radius: 50%;
+            position: absolute;
+            top: 5px;
+            right: 5px;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100%;
+            background-color: var(--background-color);
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+            transition: left 0.3s;
+            padding: 20px;
+        }
+
+        .sidebar-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-color);
+        }
+
+        .toggle-sidebar {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background-color: var(--button-background);
+            color: var(--button-color);
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        :root {
+            --background-color: #ffffff;
+            --text-color: #000000;
+            --accent-color: #00bcd4;
+            --button-background: #00bcd4;
+            --button-color: #ffffff;
+            --text-on-accent: #ffffff;
+            --event-dot: #006064;
+        }
+
+        [data-theme='dark'] {
+            --background-color: #121212;
+            --text-color: #ffffff;
+            --accent-color: #ffab00;
+            --button-background: #ffab00;
+            --button-color: #000000;
+            --text-on-accent: #000000;
+            --event-dot: #ff6f00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 id="month-year"></h1>
+            <div class="navigation-buttons">
+                <button id="prev-month">Anterior</button>
+                <button id="next-month">Próximo</button>
+            </div>
+            <button id="toggle-theme">Trocar Tema</button>
+        </header>
+        <div class="calendar" id="calendar"></div>
+    </div>
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-content">
+            <p>Desenvolvido por Kassia Albuquerque</p>
+            <p>© 2024. Todos os direitos reservados.</p>
+        </div>
+    </div>
+    <button id="toggle-sidebar" class="toggle-sidebar">☰</button>
+    <script>
+        const monthYearElement = document.getElementById('month-year');
+        const calendarElement = document.getElementById('calendar');
+        const prevMonthButton = document.getElementById('prev-month');
+        const nextMonthButton = document.getElementById('next-month');
+        const toggleThemeButton = document.getElementById('toggle-theme');
+        const toggleSidebarButton = document.getElementById('toggle-sidebar');
+        const sidebarElement = document.getElementById('sidebar');
+
+        let currentDate = new Date();
+        let currentTheme = 'light';
+
+        function renderCalendar() {
+            const month = currentDate.getMonth();
+            const year = currentDate.getFullYear();
+
+            monthYearElement.textContent = `${getMonthName(month)} ${year}`;
+            calendarElement.innerHTML = '';
+
+            const firstDayOfMonth = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            const dayHeaders = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
+            dayHeaders.forEach(day => {
+                const dayHeaderElement = document.createElement('div');
+                dayHeaderElement.className = 'day-header';
+                dayHeaderElement.textContent = day;
+                calendarElement.appendChild(dayHeaderElement);
+            });
+
+            for (let i = 0; i < firstDayOfMonth; i++) {
+                const emptyCell = document.createElement('div');
+                calendarElement.appendChild(emptyCell);
+            }
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayCell = document.createElement('div');
+                dayCell.className = 'day-cell';
+                dayCell.textContent = day;
+                dayCell.addEventListener('click', () => showDayDetails(day));
+                calendarElement.appendChild(dayCell);
+            }
+        }
+
+        function getMonthName(month) {
+            const monthNames = [
+                'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+                'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+            ];
+            return monthNames[month];
+        }
+
+        function showDayDetails(day) {
+            alert(`Detalhes do dia ${day}`);
+        }
+
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            document.documentElement.setAttribute('data-theme', currentTheme);
+        }
+
+        function toggleSidebar() {
+            const isVisible = sidebarElement.style.left === '0px';
+            sidebarElement.style.left = isVisible ? '-250px' : '0px';
+        }
+
+        prevMonthButton.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() - 1);
+            renderCalendar();
+        });
+
+        nextMonthButton.addEventListener('click', () => {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+            renderCalendar();
+        });
+
+        toggleThemeButton.addEventListener('click', toggleTheme);
+        toggleSidebarButton.addEventListener('click', toggleSidebar);
+
+        renderCalendar();
+    </script>
+</body>
+</html>
